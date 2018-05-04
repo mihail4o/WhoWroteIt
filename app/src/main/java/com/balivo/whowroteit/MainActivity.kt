@@ -9,9 +9,13 @@ import android.widget.EditText
 import android.widget.TextView
 import android.net.NetworkInfo
 import android.net.ConnectivityManager
+import android.support.v4.app.LoaderManager
+import android.support.v4.content.Loader
+import org.json.JSONArray
+import org.json.JSONObject
 
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<String> {
 
     lateinit var mBookInput: EditText
     lateinit var mAuthorText: TextView
@@ -23,10 +27,23 @@ class MainActivity : AppCompatActivity() {
         mBookInput = findViewById(R.id.bookInput)
         mAuthorText = findViewById(R.id.authorText)
         mTitleText = findViewById(R.id.titleText)
+
+        /*
+        If the loader exists, initialize it. You only want to reassociate the loader
+        to the Activity if a query has already been executed. In the initial state
+        of the app, no data is loaded so there is none to preserve.
+         */
+        if (supportLoaderManager.getLoader<Any>(0) != null) {
+            supportLoaderManager.initLoader(0, null, this)
+        }
     }
 
     fun searchBooks(view: View) {
+
         val mQueryString = mBookInput.text.toString()
+
+        val queryBundle = Bundle()
+        queryBundle.putString("queryString", mQueryString)
 
         val inputManager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
 
@@ -44,7 +61,10 @@ class MainActivity : AppCompatActivity() {
 
         if (networkInfo != null && networkInfo.isConnected() && mQueryString.length != 0) {
 
-            FetchBook(mTitleText, mAuthorText).execute(mQueryString)
+            // ***************************
+            // Create, restart Loader!!! *
+            // ***************************
+            getSupportLoaderManager().restartLoader(0, queryBundle,this)
 
             mTitleText.text = getString(R.string.waitTitle)
             mAuthorText.text = ""
@@ -62,4 +82,48 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
+    override fun onCreateLoader(id: Int, args: Bundle?): Loader<String> {
+        return BookLoader(this, args!!.getString("queryString"))
+    }
+
+    override fun onLoadFinished(loader: Loader<String>, data: String?) {
+        try {
+            var jsonObject = JSONObject(data) as JSONObject
+            var itemsArray = jsonObject.getJSONArray("items") as JSONArray
+
+            for (i in 0 until itemsArray.length()) {
+                val book = itemsArray.getJSONObject(i) //Get the current item
+                var title: String? = null
+                var authors: String? = null
+                val volumeInfo = book.getJSONObject("volumeInfo")
+
+                try {
+                    title = volumeInfo.getString("title")
+                    authors = volumeInfo.getString("authors")
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+
+                //If both a title and author exist, update the TextViews and return
+                if (title != null && authors != null) {
+                    mTitleText.text = title
+                    mAuthorText.text = authors
+                    return
+                }
+            }
+            mTitleText.text = "No Results Found"
+            mAuthorText.text = ""
+
+        } catch (e: Exception) {
+            mTitleText.text = "No Results Found"
+            mAuthorText.text = ""
+            e.printStackTrace()
+        }
+    }
+
+    override fun onLoaderReset(loader: Loader<String>) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
 }
