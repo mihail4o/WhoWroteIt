@@ -20,6 +20,7 @@ class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<String> 
     lateinit var mBookInput: EditText
     lateinit var mAuthorText: TextView
     lateinit var mTitleText: TextView
+    lateinit var mEpubText: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,6 +28,7 @@ class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<String> 
         mBookInput = findViewById(R.id.bookInput)
         mAuthorText = findViewById(R.id.authorText)
         mTitleText = findViewById(R.id.titleText)
+        mEpubText = findViewById(R.id.epubText)
 
         /*
         If the loader exists, initialize it. You only want to reassociate the loader
@@ -68,16 +70,19 @@ class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<String> 
 
             mTitleText.text = getString(R.string.waitTitle)
             mAuthorText.text = ""
+            mEpubText.text = ""
 
         } else {
 
             if (mQueryString.length == 0) {
-                mAuthorText.setText("")
+                mAuthorText.text = ""
+                mEpubText.text = ""
                 mTitleText.text = "Please enter a search term"
 
             } else {
 
                 mAuthorText.text = ""
+                mEpubText.text = ""
                 mTitleText.text = "Please check your network connection and try again."
             }
         }
@@ -96,34 +101,41 @@ class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<String> 
                 val book = itemsArray.getJSONObject(i) //Get the current item
                 var title: String? = null
                 var authors: String? = null
+                var epub: String? = null
                 val volumeInfo = book.getJSONObject("volumeInfo")
+                val accessInfo = book.getJSONObject("accessInfo")
 
                 try {
                     title = volumeInfo.getString("title")
                     authors = volumeInfo.getString("authors")
+                    epub = accessInfo.getString("epub")
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
 
                 //If both a title and author exist, update the TextViews and return
-                if (title != null && authors != null) {
+                if (title != null && authors != null && epub != null) {
                     mTitleText.text = title
                     mAuthorText.text = authors
+                    mEpubText.text = epub
+
                     return
                 }
             }
             mTitleText.text = "No Results Found"
             mAuthorText.text = ""
+            mEpubText.text = ""
 
         } catch (e: Exception) {
             mTitleText.text = "No Results Found"
             mAuthorText.text = ""
+            mEpubText.text = ""
             e.printStackTrace()
         }
     }
 
     override fun onLoaderReset(loader: Loader<String>) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+
     }
 
 }
