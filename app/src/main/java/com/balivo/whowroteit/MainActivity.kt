@@ -101,23 +101,26 @@ class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<String> 
                 val book = itemsArray.getJSONObject(i) //Get the current item
                 var title: String? = null
                 var authors: String? = null
-                var epub: String? = null
+                var pdf: Boolean? = null
                 val volumeInfo = book.getJSONObject("volumeInfo")
                 val accessInfo = book.getJSONObject("accessInfo")
+                val pdfObj = accessInfo.getJSONObject("pdf")
 
                 try {
                     title = volumeInfo.getString("title")
                     authors = volumeInfo.getString("authors")
-                    epub = accessInfo.getString("epub")
+                    pdf = pdfObj.getBoolean("isAvailable")
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
 
                 //If both a title and author exist, update the TextViews and return
-                if (title != null && authors != null && epub != null) {
+                if (title != null && authors != null && pdf != null) {
                     mTitleText.text = title
-                    mAuthorText.text = authors
-                    mEpubText.text = epub
+                    authors = authors.replace('"', ' ')
+                    mAuthorText.text = authors.trim('[', ']')
+
+                    mEpubText.text = if(pdf) { "has PDF version"} else { "no PDF version"}
 
                     return
                 }
